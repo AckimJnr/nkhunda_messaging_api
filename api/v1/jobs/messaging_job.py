@@ -17,7 +17,7 @@ def send_message_job(message: Message):
     try:
         timestamp = int(time.time() * 1000)
         job_id = f"{message.app_id}-{message.recipient_id}-{timestamp}"
-        q.enqueue("workers.message_worker.send_message", dict(message), job_id=job_id)
+        job = q.enqueue("workers.message_worker.send_message", dict(message), job_id=job_id)
         logger.info(f"Enqueued job with id {job_id}")
         return True
     except Exception as e:
