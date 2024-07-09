@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 redis_conn = Redis()
 q = Queue("nkhunda_message_queue", connection=redis_conn)
 
-def send_message_job(message: Message):
+def send_message_job(message: Message) :
     """
     Send message job
     """
