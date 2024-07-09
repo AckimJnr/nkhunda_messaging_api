@@ -4,6 +4,8 @@ from datetime import datetime
 from models.userModel import User
 from config.db_config import collection
 from schemas.userSchema import all_users_data, single_user_data
+from auth.auth import get_current_user, get_password_hash
+
 
 router = APIRouter(
     prefix="/api/v1",
@@ -41,7 +43,11 @@ async def create_user(user: User):
     Create a new user
     """
     try:
-        result = collection["user"].insert_one(dict(user))
+        hashed_password = get_password_hash(user.password)
+        user_dict = dict(user)
+        user_dict["password"] = hashed_password
+        
+        result = collection["user"].insert_one(dict(user_dict))
         return {"status_code": 201, "id":str(result.inserted_id)}
     except Exception as e:
         return HTTPException(status_code=500, detail=f"An error occurred: {e}")
