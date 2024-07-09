@@ -1,12 +1,15 @@
+import logging
 from datetime import datetime
 
-def send_message(message_data):
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def send_message(message_data):
     """
-    Function that processess sent messages
+    Function that processes sent messages
     """
-    message = {}
     try:
-        print(f"Sending message: {message_data}")
+        logger.info(f"Sending message: {message_data}")
         message = {
             "app_id": message_data["app_id"],
             "message_type": message_data["message_type"],
@@ -18,8 +21,8 @@ def send_message(message_data):
             "created_at": message_data.get("created_at", int(datetime.timestamp(datetime.now()))),
             "updated_at": int(datetime.timestamp(datetime.now())),
         }
-
+        logger.info(f"Message processed successfully: {message}")
         return message
     except Exception as e:
-        print(f"Error sending message: {e}")
+        logger.error(f"Error sending message: {e}")
         return {"status": "failure", "error": str(e)}
