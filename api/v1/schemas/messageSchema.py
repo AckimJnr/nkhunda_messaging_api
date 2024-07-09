@@ -19,4 +19,4 @@ def all_messages_data(messages):
     """
     Returns a list of dictionaries of all messages
     """
-    return [single_message_data(message.dict()) for message in messages]
+    return [single_message_data(dict(message)) for message in messages]
