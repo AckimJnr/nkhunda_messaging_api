@@ -4,7 +4,7 @@ from routers import userRoutes
 from routers import organisationRoutes
 from routers import organisationApplicationRoutes
 from routers import messageRoutes
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from routers import authRoutes
 """
 App module entry point to server
 """
@@ -12,7 +12,7 @@ App module entry point to server
 app = FastAPI()
 router = APIRouter()
 
-
+app.include_router(authRoutes.router)
 app.include_router(userRoutes.router)
 app.include_router(organisationRoutes.router)
 app.include_router(organisationApplicationRoutes.router)
