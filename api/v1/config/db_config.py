@@ -11,7 +11,7 @@ uri = "mongodb://localhost:27017/"
 # Create a new client and connect to the server
 client = MongoClient(uri)
 
-db = client.nkhunda_db
+db = client.nkhunda_messaging_api_db
 
 # collections initialisation
 app_collection = db['app']
