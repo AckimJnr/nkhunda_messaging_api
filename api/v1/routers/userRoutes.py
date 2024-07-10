@@ -43,9 +43,9 @@ async def create_user(user: User):
     Create a new user
     """
     try:
-        hashed_password = get_password_hash(user.password)
+        hashed_password = get_password_hash(user.hashed_password)
         user_dict = dict(user)
-        user_dict["password"] = hashed_password
+        user_dict["hashed_password"] = hashed_password
         
         result = collection["user"].insert_one(dict(user_dict))
         return {"status_code": 201, "id":str(result.inserted_id)}

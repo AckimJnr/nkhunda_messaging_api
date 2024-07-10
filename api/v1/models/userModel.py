@@ -14,7 +14,7 @@ class User(BaseModel):
     app_id: str
     full_name: str
     email: str
-    password: str
+    hashed_password: str
     role: str
     created_at: int = int(datetime.timestamp(datetime.now()))
     updated_at: int = int(datetime.timestamp(datetime.now()))
