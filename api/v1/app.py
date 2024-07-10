@@ -5,11 +5,11 @@ from routers import userRoutes, organisationRoutes, organisationApplicationRoute
 app = FastAPI()
 router = APIRouter()
 
+app.include_router(authRoutes.router)
 app.include_router(userRoutes.router)
 app.include_router(organisationRoutes.router)
 app.include_router(organisationApplicationRoutes.router)
 app.include_router(messageRoutes.router)
-app.include_router(authRoutes.router)
 
 @app.get("/", tags=["root"])
 async def read_root() -> dict:
