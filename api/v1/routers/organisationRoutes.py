@@ -5,6 +5,7 @@ from datetime import datetime
 from models.organisationModel import Organisation as Org
 from config.db_config import collection
 from schemas.organisationSchema import all_orgs_data, single_org_data
+from schemas.organisationApplicationSchema import all_apps_data
 
 
 router = APIRouter(
@@ -20,8 +21,18 @@ async def get_orgs():
     """
     Get all organisations
     """
-    data = collection["org"].find()
-    return all_orgs_data(data)
+    try:
+        orgs = collection["org"].find()
+        orgs_data = []
+        for org in orgs:
+            org_id = str(org["_id"])
+            apps = collection["app"].find({"org_id": org_id})
+            org_data = single_org_data(org)
+            org_data["apps"] = all_apps_data(apps)
+            orgs_data.append(org_data)
+        return orgs_data
+    except Exception as e:
+        return HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
 @router.get("/org/{org_id}")
 async def get_single_org(org_id: str):
@@ -32,9 +43,12 @@ async def get_single_org(org_id: str):
         org_id = ObjectId(org_id)
         org = collection["org"].find_one({"_id": org_id})
         if org:
-            return single_org_data(org)
+            apps = collection["app"].find({"org_id": str(org_id)})
+            org_data = single_org_data(org)
+            org_data["apps"] = all_apps_data(apps)
+            return org_data
         else:
-            return HTTPException(status_code=404, detail=f"Organisation not found")
+            return HTTPException(status_code=404, detail="Organisation not found")
     except Exception as e:
         return HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
