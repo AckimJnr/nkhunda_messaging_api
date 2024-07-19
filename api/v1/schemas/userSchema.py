@@ -8,8 +8,6 @@ def single_user_data(user):
     """
     return {
         "user_id": str(user["_id"]),
-        "org_id": user.get("org_id", None),
-        "app_id": user.get("app_id", None),
         "full_name": user.get("full_name", None),
         "email": user.get("email", None),
         "role": user.get("role", None),

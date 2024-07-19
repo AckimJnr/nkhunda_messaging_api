@@ -4,14 +4,13 @@ belonging to an organisation in an application
 """
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 
 class User(BaseModel):
     """
     Implements User
     """
-    org_id: str
-    app_id: str
     full_name: str
     email: str
     hashed_password: str

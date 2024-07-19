@@ -6,6 +6,7 @@ from models.organisationModel import Organisation as Org
 from config.db_config import collection
 from schemas.organisationSchema import all_orgs_data, single_org_data
 from schemas.organisationApplicationSchema import all_apps_data
+from pydantic import ValidationError
 
 
 router = APIRouter(
@@ -58,8 +59,19 @@ async def create_org(org: Org):
     Create a new organisation
     """
     try:
-        result = collection["org"].insert_one(dict(org))
-        return {"status_code": 201, "id":str(result.inserted_id)}
+        # Validate owner ObjectId
+        try:
+            owner_id = ObjectId(org.owner)
+        except ValidationError:
+            return HTTPException(status_code=400, detail="Invalid owner ID format")
+
+        # Check if the owner exists
+        owner = collection["user"].find_one({"_id": owner_id})
+        if not owner:
+            return HTTPException(status_code=400, detail="Owner does not exist")
+
+        result = collection["org"].insert_one(org.dict())
+        return {"status_code": 201, "id": str(result.inserted_id)}
     except Exception as e:
         return HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
