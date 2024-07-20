@@ -5,11 +5,9 @@ def single_app_data(app):
     return {
         "app_id": str(app["_id"]),
         "org_id": app["org_id"],
-        "users": app["users"],
         "app_name": app["app_name"],
         "app_type": app["app_type"],
         "app_description": app["app_description"],
-        "groups": app["groups"],
         "created_at": int(app["created_at"]),
         "updated_at": int(app["updated_at"])
     }

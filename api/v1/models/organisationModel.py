@@ -11,6 +11,5 @@ class Organisation(BaseModel):
     """
     name: str
     owner: str
-    apps: list
     created_at: int = int(datetime.timestamp(datetime.now()))
     updated_at: int = int(datetime.timestamp(datetime.now()))

@@ -59,18 +59,16 @@ async def create_org(org: Org):
     Create a new organisation
     """
     try:
-        # Validate owner ObjectId
         try:
             owner_id = ObjectId(org.owner)
         except ValidationError:
             return HTTPException(status_code=400, detail="Invalid owner ID format")
 
-        # Check if the owner exists
         owner = collection["user"].find_one({"_id": owner_id})
         if not owner:
             return HTTPException(status_code=400, detail="Owner does not exist")
 
-        result = collection["org"].insert_one(org.dict())
+        result = collection["org"].insert_one(dict(org))
         return {"status_code": 201, "id": str(result.inserted_id)}
     except Exception as e:
         return HTTPException(status_code=500, detail=f"An error occurred: {e}")

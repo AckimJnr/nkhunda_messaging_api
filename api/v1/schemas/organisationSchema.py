@@ -5,7 +5,6 @@ def single_org_data(org):
     return {
         "org_id": str(org["_id"]),
         "name": org.get("name", None),
-        "apps": org.get("apps", None),
         "token": org.get("token", None),
         "created_at": int(org["created_at"]),
         "updated_at": int(org["updated_at"])
