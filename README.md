@@ -24,5 +24,5 @@
 3. Install the requirement from the requirements.txt file
 4. Navigate to api/vi
     - Inside the folder run the worker for the queue using `rq worker nkhunda_message_queue`
-    - Run the main app using `uvicorn main:app --reload`
+    - Run the main app using `uvicorn app:app --reload`
     - Open the base url open */docs* to access the swagger documentantion

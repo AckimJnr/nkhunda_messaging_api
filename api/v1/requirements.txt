@@ -4,3 +4,6 @@ fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
+pymongo
+rq
+python-multipart
