@@ -1,27 +1,26 @@
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
 """
 db_config module
 
-Connect to our database and create collections
+Connect to MongoDB and expose named collection references.
+All configuration is loaded from environment variables via settings.
 """
 
-uri = "mongodb://localhost:27017/"
+from pymongo.mongo_client import MongoClient
+from config.settings import settings
 
-# Create a new client and connect to the server
-client = MongoClient(uri)
+# Create a single client and connect to the server
+client = MongoClient(settings.MONGO_URI)
 
-db = client.nkhunda_messaging_api_db
+db = client[settings.DB_NAME]
 
-# collections initialisation
-app_collection = db['app']
-user_collection = db['user']
-message_collection = db['message']
-group_collection = db['group']
-chat_collection = db['chat']
-organisation_collection = db['organisation']
-notification_collection = db['notification']
-
+# Collection references
+app_collection = db["app"]
+user_collection = db["user"]
+message_collection = db["message"]
+group_collection = db["group"]
+chat_collection = db["chat"]
+organisation_collection = db["organisation"]
+notification_collection = db["notification"]
 
 collection = {
     "app": app_collection,
@@ -30,5 +29,5 @@ collection = {
     "group": group_collection,
     "chat": chat_collection,
     "notification": notification_collection,
-    "org": organisation_collection
+    "org": organisation_collection,
 }

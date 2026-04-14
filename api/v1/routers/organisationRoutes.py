@@ -1,12 +1,21 @@
-import os
-from fastapi import APIRouter, HTTPException
+"""
+organisationRoutes module
+
+CRUD operations for organisations.
+All routes require authentication.
+"""
+
+from fastapi import APIRouter, HTTPException, Depends, status
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 from datetime import datetime
+
 from models.organisationModel import Organisation as Org
+from models.userModel import User
 from config.db_config import collection
 from schemas.organisationSchema import all_orgs_data, single_org_data
 from schemas.organisationApplicationSchema import all_apps_data
-from pydantic import ValidationError
+from auth.auth import get_current_active_user
 
 
 router = APIRouter(
@@ -16,14 +25,29 @@ router = APIRouter(
 )
 
 
-#organisaton routes
+def _parse_object_id(id_str: str) -> ObjectId:
+    """Parse a string into ObjectId, raising HTTP 400 on invalid format."""
+    try:
+        return ObjectId(id_str)
+    except InvalidId:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ID format")
+
+
+# ---------------------------------------------------------------------------
+# GET /orgs/ — list all organisations with their apps (paginated)
+# ---------------------------------------------------------------------------
 @router.get("/orgs/")
-async def get_orgs():
+async def get_orgs(
+    skip: int = 0,
+    limit: int = 20,
+    current_user: User = Depends(get_current_active_user),
+):
     """
-    Get all organisations
+    Retrieve a paginated list of all organisations, each including their apps.
+    Requires authentication.
     """
     try:
-        orgs = collection["org"].find()
+        orgs = collection["org"].find().skip(skip).limit(limit)
         orgs_data = []
         for org in orgs:
             org_id = str(org["_id"])
@@ -32,81 +56,132 @@ async def get_orgs():
             org_data["apps"] = all_apps_data(apps)
             orgs_data.append(org_data)
         return orgs_data
+    except HTTPException:
+        raise
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"An error occurred: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {e}",
+        )
 
+
+# ---------------------------------------------------------------------------
+# GET /org/{org_id} — single organisation with its apps
+# ---------------------------------------------------------------------------
 @router.get("/org/{org_id}")
-async def get_single_org(org_id: str):
+async def get_single_org(
+    org_id: str,
+    current_user: User = Depends(get_current_active_user),
+):
     """
-    Get a single organisation
+    Retrieve a single organisation by ID, including its apps.
+    Requires authentication.
     """
     try:
-        org_id = ObjectId(org_id)
-        org = collection["org"].find_one({"_id": org_id})
-        if org:
-            apps = collection["app"].find({"org_id": str(org_id)})
-            org_data = single_org_data(org)
-            org_data["apps"] = all_apps_data(apps)
-            return org_data
-        else:
-            return HTTPException(status_code=404, detail="Organisation not found")
+        oid = _parse_object_id(org_id)
+        org = collection["org"].find_one({"_id": oid})
+        if not org:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
+
+        apps = collection["app"].find({"org_id": str(oid)})
+        org_data = single_org_data(org)
+        org_data["apps"] = all_apps_data(apps)
+        return org_data
+    except HTTPException:
+        raise
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"An error occurred: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {e}",
+        )
 
-@router.post("/org/")
-async def create_org(org: Org):
+
+# ---------------------------------------------------------------------------
+# POST /org/ — create an organisation
+# ---------------------------------------------------------------------------
+@router.post("/org/", status_code=status.HTTP_201_CREATED)
+async def create_org(
+    org: Org,
+    current_user: User = Depends(get_current_active_user),
+):
     """
-    Create a new organisation
+    Create a new organisation.
+    The 'owner' field must be a valid existing user ID.
+    Requires authentication.
     """
     try:
-        try:
-            owner_id = ObjectId(org.owner)
-        except ValidationError:
-            return HTTPException(status_code=400, detail="Invalid owner ID format")
-
-        owner = collection["user"].find_one({"_id": owner_id})
-        if not owner:
-            return HTTPException(status_code=400, detail="Owner does not exist")
+        owner_id = _parse_object_id(org.owner)
+        if not collection["user"].find_one({"_id": owner_id}):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Owner user does not exist",
+            )
 
         result = collection["org"].insert_one(dict(org))
-        return {"status_code": 201, "id": str(result.inserted_id)}
+        return {"id": str(result.inserted_id)}
+    except HTTPException:
+        raise
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"An error occurred: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {e}",
+        )
 
+
+# ---------------------------------------------------------------------------
+# PUT /org/{org_id} — update an organisation
+# ---------------------------------------------------------------------------
 @router.put("/org/{org_id}")
-async def update_org(org_id: str, updated_org: Org):
+async def update_org(
+    org_id: str,
+    updated_org: Org,
+    current_user: User = Depends(get_current_active_user),
+):
     """
-    Update an organisation
-    """
-    try:
-        org_id = ObjectId(org_id)
-        existing_org = collection["org"].find_one({"_id": org_id})
-
-        if not existing_org:
-            return HTTPException(status_code=404, detail=f"Organisation not found")
-        
-        update_org.updated_at = datetime.timestamp(datetime.now())
-        result = collection["org"].update_one({"_id": org_id}, {"$set":dict(updated_org)})
-        return {"status_code": 200, "message":"Organisation Updated Successfully"}
-
-    except Exception as e:
-        return HTTPException(status_code=500, detail=f"An error occured {e}")
-
-@router.delete("/org/{org_id}")
-async def delete_org(org_id: str):
-    """
-    Delete a single organisation
+    Update an existing organisation by ID.
+    Requires authentication.
     """
     try:
-        org_id = ObjectId(org_id)
-        existing_org = collection["org"].find_one({"_id": org_id})
+        oid = _parse_object_id(org_id)
+        if not collection["org"].find_one({"_id": oid}):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
 
-        if not existing_org:
-            return HTTPException(status_code=404, detail=f"Organisation not found")
-        
-        update_org.updated_at = datetime.timestamp(datetime.now())
-        result = collection["org"].delete_one({"_id": org_id})
-        return {"status_code": 200, "message":"Organisation Deleted Successfully"}
-
+        update_data = dict(updated_org)
+        update_data["updated_at"] = int(datetime.timestamp(datetime.now()))
+        collection["org"].update_one({"_id": oid}, {"$set": update_data})
+        return {"message": "Organisation updated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"An error occured {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {e}",
+        )
+
+
+# ---------------------------------------------------------------------------
+# DELETE /org/{org_id} — delete an organisation
+# ---------------------------------------------------------------------------
+@router.delete("/org/{org_id}", status_code=status.HTTP_200_OK)
+async def delete_org(
+    org_id: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Delete an organisation by ID.
+    Requires authentication.
+    """
+    try:
+        oid = _parse_object_id(org_id)
+        if not collection["org"].find_one({"_id": oid}):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
+
+        collection["org"].delete_one({"_id": oid})
+        return {"message": "Organisation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {e}",
+        )

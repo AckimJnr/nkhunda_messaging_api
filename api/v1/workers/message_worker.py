@@ -1,15 +1,24 @@
+"""
+message_worker module
+
+Processes messages dequeued from the Redis job queue.
+Note: this function MUST be synchronous — RQ cannot execute async functions.
+"""
+
 import logging
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def send_message(message_data):
+
+def send_message(message_data: dict) -> dict:
     """
-    Function that processes sent messages
+    Processes a message payload received from the RQ queue.
+    Returns the processed message dict, or an error dict on failure.
     """
     try:
-        logger.info(f"Sending message: {message_data}")
+        logger.info(f"Processing message: {message_data}")
         message = {
             "app_id": message_data["app_id"],
             "message_type": message_data["message_type"],
@@ -24,5 +33,5 @@ async def send_message(message_data):
         logger.info(f"Message processed successfully: {message}")
         return message
     except Exception as e:
-        logger.error(f"Error sending message: {e}")
+        logger.error(f"Error processing message: {e}")
         return {"status": "failure", "error": str(e)}
